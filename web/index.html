@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>THE BIG CHAT</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: rgba(0, 0, 0, 0.82); /* Черный фон сайта вокруг чата */
+      color: #fff;
+    }
+    #chatbox {
+      border: 1px solid #ccc;
+      padding: 10px;
+      width: 70vw; /* Растягиваем окно чата на 70% ширины экрана */
+      height: 70vh; /* Растягиваем окно чата на 70% высоты экрана */
+      overflow-y: scroll;
+      margin-bottom: 10px;
+      border-radius: 10px;
+      background-color: rgba(100, 141, 236, 0.411); /* Полупрозрачный голубой фон чат-бокса */
+    }
+    #message {
+      width: 60vw; /* Растягиваем окно ввода сообщений на 70% ширины экрана */
+      height: 40px; /* Увеличиваем высоту окна ввода сообщений в 2 раза */
+      padding: 5px;
+      margin-right: 5px;
+      border: 1px solid #ccc;
+      border-radius: 10px;
+    }
+    #sendButton {
+      padding: 5px 10px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>THE BIG CHAT</h1>
+  <div id="chatbox"></div>
+  <div style="display: flex; align-items: center;">
+    <input type="text" id="message" />
+    <button id="sendButton" onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const ws = new WebSocket("ws://" + window.location.host + "/ws");
+    const chatbox = document.getElementById("chatbox");
+    const messageInput = document.getElementById("message");
+    const sendButton = document.getElementById("sendButton");
+
+    ws.onmessage = function (event) {
+      const message = event.data;
+      chatbox.innerHTML += "<p>" + message + "</p>";
+      chatbox.scrollTop = chatbox.scrollHeight;
+    };
+
+    function sendMessage() {
+      const message = messageInput.value;
+      if (message.trim() !== "") {
+        ws.send(message);
+        messageInput.value = "";
+      }
+    }
+
+    // Добавляем обработку нажатия Enter для отправки сообщения
+    messageInput.addEventListener("keyup", function(event) {
+      if (event.key === "Enter") {
+        sendButton.click();
+      }
+    });
+  </script>
+</body>
+</html>
