@@ -1,53 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>THE BIG CHAT</title>
+  <!-- Подключаем Bootstrap CSS -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
   <style>
     body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background-color: rgba(0, 0, 0, 0.82); /* Черный фон сайта вокруг чата */
-      color: #fff;
+      background-color: #f5f5f5;
+      color: #333;
     }
+
     #chatbox {
-      border: 1px solid #ccc;
+      background-color: #fff;
+    }
+
+    .btn-primary {
+      transition: 0.3s;
+    }
+
+    .btn-primary:hover {
+      background-color: #448aff;
+    }
+
+    .message {
       padding: 10px;
-      width: 70vw; /* Растягиваем окно чата на 70% ширины экрана */
-      height: 70vh; /* Растягиваем окно чата на 70% высоты экрана */
-      overflow-y: scroll;
-      margin-bottom: 10px;
-      border-radius: 10px;
-      background-color: rgba(100, 141, 236, 0.411); /* Полупрозрачный голубой фон чат-бокса */
+      border-radius: 5px;
+      margin: 5px;
+      width: 70%;
+      position: relative;
     }
-    #message {
-      width: 60vw; /* Растягиваем окно ввода сообщений на 70% ширины экрана */
-      height: 40px; /* Увеличиваем высоту окна ввода сообщений в 2 раза */
-      padding: 5px;
-      margin-right: 5px;
-      border: 1px solid #ccc;
-      border-radius: 10px;
+
+    .message-outgoing {
+      background-color: #e3f2fd;
+      text-align: right;
+      margin-left: auto;
     }
-    #sendButton {
-      padding: 5px 10px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      border-radius: 10px;
+
+    .message-incoming {
+      background-color: #c8e6c9;
+      text-align: left;
+      margin-right: auto;
+    }
+
+    .message-nickname {
+      font-size: 12px;
+      color: #777;
+      text-transform: lowercase;
+      margin-bottom: 5px;
+    }
+
+    .message-content {
+      margin-bottom: 5px;
+    }
+
+    .message-time {
+      font-size: 10px;
+      color: #777;
+      text-transform: lowercase;
+      position: absolute;
+      bottom: 5px;
+    }
+
+    .message-time-outgoing {
+      right: 5px;
+    }
+
+    .message-time-incoming {
+      left: 5px;
     }
   </style>
 </head>
 <body>
-  <h1>THE BIG CHAT</h1>
-  <div id="chatbox"></div>
-  <div style="display: flex; align-items: center;">
-    <input type="text" id="message" />
-    <button id="sendButton" onclick="sendMessage()">Send</button>
+  <div class="container py-5">
+    <button id="loginButton" class="btn btn-primary float-right" onclick="showLoginModal()">Login</button>
+    <h1 class="text-center mb-4">THE BIG CHAT</h1>
+    <div id="chatbox" class="rounded p-3 mb-4" style="height: 50vh; overflow-y: scroll;">
+    </div>
+    <div class="input-group">
+      <input type="text" id="message" class="form-control" placeholder="Enter your message">
+      <div class="input-group-append">
+        <button id="sendButton" class="btn btn-primary" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно для входа -->
+  <div id="loginModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Login</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="hideLoginModal()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form>
+            <div class="form-group">
+              <label for="username">Username</label>
+              <input type="text" class="form-control" id="username" placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+              <label for="password">Password</label>
+              <input type="password" class="form-control" id="password" placeholder="Enter your password">
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-primary" onclick="login()">Войти</button>
+          <button type="button" class="btn btn-secondary" onclick="register()">Регистрация</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -55,17 +121,69 @@
     const chatbox = document.getElementById("chatbox");
     const messageInput = document.getElementById("message");
     const sendButton = document.getElementById("sendButton");
+    const loginButton = document.getElementById("loginButton");
+    let username = ""; // Variable to store the username of the current user
+
+    // Переносим кнопку "Login" в правый верхний угол страницы
+    loginButton.style.position = "absolute";
+    loginButton.style.right = "10px";
+    loginButton.style.top = "10px";
 
     ws.onmessage = function (event) {
       const message = event.data;
-      chatbox.innerHTML += "<p>" + message + "</p>";
-      chatbox.scrollTop = chatbox.scrollHeight;
+      const [sender, content] = message.split(": ");
+      if (sender && content) {
+        if (sender.toLowerCase() === username.toLowerCase()) {
+          appendMessage("message-outgoing", sender.toLowerCase(), content);
+        } else {
+          appendMessage("message-incoming", sender.toLowerCase(), content);
+        }
+      }
     };
+
+    function appendMessage(className, sender, content) {
+      const div = document.createElement("div");
+      div.classList.add("message", className);
+
+      const nicknameElement = document.createElement("div");
+      nicknameElement.classList.add("message-nickname");
+      nicknameElement.innerText = sender;
+      div.appendChild(nicknameElement);
+
+      // Empty line for spacing
+      const emptyLine = document.createElement("div");
+      div.appendChild(emptyLine);
+
+      const contentElement = document.createElement("div");
+      contentElement.classList.add("message-content");
+      contentElement.innerHTML = content.replace(/\n/g, "<br>"); // Handle multiline messages
+      div.appendChild(contentElement);
+
+      const timeElement = document.createElement("div");
+      timeElement.classList.add("message-time");
+      timeElement.innerText = getCurrentTime();
+      if (className === "message-outgoing") {
+        timeElement.classList.add("message-time-outgoing");
+      } else {
+        timeElement.classList.add("message-time-incoming");
+      }
+      div.appendChild(timeElement);
+
+      chatbox.appendChild(div);
+      chatbox.scrollTop = chatbox.scrollHeight;
+    }
+
+    function getCurrentTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, "0");
+      const minutes = String(now.getMinutes()).padStart(2, "0");
+      return `${hours}:${minutes}`;
+    }
 
     function sendMessage() {
       const message = messageInput.value;
       if (message.trim() !== "") {
-        ws.send(message);
+        ws.send(username + ": " + message);
         messageInput.value = "";
       }
     }
@@ -76,6 +194,27 @@
         sendButton.click();
       }
     });
+
+    // Модальное окно для входа
+    function showLoginModal() {
+      const loginModal = document.getElementById("loginModal");
+      loginModal.style.display = "block";
+    }
+
+    function hideLoginModal() {
+      const loginModal = document.getElementById("loginModal");
+      loginModal.style.display = "none";
+    }
+
+    function login() {
+      username = document.getElementById("username").value; // Store the username
+      hideLoginModal();
+    }
+
+    function register() {
+      hideLoginModal();
+    }
+
   </script>
 </body>
 </html>
