@@ -34,7 +34,7 @@ type Postgres struct {
 func InitConfig() (*Config, error) {
 	config := Config{
 		HttpConfing: &Http{
-			Port: getEnvAsStr("HTTP_PORT", "8080"),
+			Port: getEnvAsStr("HTTP_PORT", ":8080"),
 			Host: getEnvAsStr("HTTP_HOST", "localhost"),
 		},
 		PostgresConfig: &Postgres{
@@ -71,7 +71,7 @@ func (c Config) Validate() error {
 }
 
 func (c Http) Validate() error {
-	err := validation.ValidateStruct(c,
+	err := validation.ValidateStruct(&c,
 		validation.Field(&c.Host, validation.Required),
 		validation.Field(&c.Port, validation.Required),
 	)
@@ -84,7 +84,7 @@ func (c Http) Validate() error {
 }
 
 func (c Postgres) Validate() error {
-	err := validation.ValidateStruct(c,
+	err := validation.ValidateStruct(&c,
 		validation.Field(&c.Host, validation.Required),
 		validation.Field(&c.Port, validation.Required),
 		validation.Field(&c.User, validation.Required),
