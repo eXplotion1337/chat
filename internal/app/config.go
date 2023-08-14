@@ -52,7 +52,7 @@ func InitConfig() (*Config, error) {
 		return nil, err
 	}
 
-	ROOT_PATH = filepath.Dir("../../")
+	ROOT_PATH = filepath.Dir(".")
 	WEB_PATH = filepath.Join(ROOT_PATH, "/web/")
 
 	return &config, nil
