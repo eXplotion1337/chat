@@ -2,15 +2,19 @@ version: "3.8"
 
 services:
   postgres:
-    container_name: chat-postgres
+    container_name: chat-postgres4
     image: postgres
     volumes:
-      - pg-data:/var/lib/postgresql/data
-    env_file:
-      - .env
+      - pg-data4:/var/lib/postgresql/data
+      - ./migrations:/docker-entrypoint-initdb.d
+    environment:
+      POSTGRES_DB: "postgres"
+      POSTGRES_USER: "postgres"
+      PGUSER: "postgres"
+      POSTGRES_PASSWORD: "123123"
     ports:
       - "5432:5432"
     restart: unless-stopped
 
 volumes:
-  pg-data:
+  pg-data4:

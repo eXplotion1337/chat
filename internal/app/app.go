@@ -1,6 +1,10 @@
 package app
 
 import (
+	"chat/internal/app/usecase"
+	"chat/internal/registry"
+	"chat/internal/server/middlewares"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/websocket"
 	"log"
@@ -12,15 +16,38 @@ var broadcast = make(chan string)
 
 var upgrader = websocket.Upgrader{}
 
+var container *registry.Container
+
+type credentials struct {
+	Username string `json:"regUsername"`
+	Password string `json:"regPassword"`
+}
+
+type loginCredentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
 func Run(config *Config) error {
-	http.HandleFunc("/ws", handleConnections)
+	cnt, err := NewContainer(config)
+	mux := http.NewServeMux()
+	connHandler := http.HandlerFunc(handleConnections)
+	container = cnt
+	if err != nil {
+		panic(err)
+	}
+	authMiddleware := middlewares.NewAuthMiddleware(container.AuthService)
+	mux.HandleFunc("/signup", handleRegister)
+	mux.HandleFunc("/signin", handleLogin)
+	mux.Handle("/ws", authMiddleware(connHandler))
+	//http.HandleFunc("/ws", handleConnections)
 	go handleMessages()
 
 	fs := http.FileServer(http.Dir(WEB_PATH))
-	http.Handle("/", fs)
+	mux.Handle("/", fs)
 
 	fmt.Printf("WebSocket server started. Listening on %s", config.HttpConfing.Port)
-	err := http.ListenAndServe(config.HttpConfing.Port, nil)
+	err = http.ListenAndServe(config.HttpConfing.Port, mux)
 	if err != nil {
 		return err
 	}
@@ -28,8 +55,54 @@ func Run(config *Config) error {
 	return nil
 }
 
-func handleRegister(w http.ResponseWriter, r *http.Request) {
+func handleLogin(w http.ResponseWriter, r *http.Request) {
+	var sf loginCredentials
+	err := json.NewDecoder(r.Body).Decode(&sf)
+	if err != nil {
+		panic(err)
+	}
 
+	q := &usecase.UserLoginInput{
+		Username: sf.Username,
+		Password: sf.Password,
+	}
+	session, err := container.LoginUsecase.ProcessAuth(q)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	cookie := http.Cookie{
+		Name:    "chat_uid",
+		Value:   string(session.Token),
+		Expires: session.ExpiresAt,
+	}
+	http.SetCookie(w, &cookie)
+	w.Write([]byte("success"))
+}
+
+func handleRegister(w http.ResponseWriter, r *http.Request) {
+	var sf credentials
+	err := json.NewDecoder(r.Body).Decode(&sf)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	input := usecase.UserRegisterInput{
+		Username: sf.Username,
+		Password: sf.Password,
+	}
+	err = container.RegisterUsecase.ProcessRegister(input)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("success"))
+	return
 }
 
 func handleConnections(w http.ResponseWriter, r *http.Request) {
