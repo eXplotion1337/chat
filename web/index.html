@@ -97,7 +97,7 @@
           </button>
         </div>
         <div class="modal-body">
-          <form>
+          <form id="loginModalForm">
             <div class="form-group">
               <label for="username">Username</label>
               <input type="text" class="form-control" id="username" placeholder="Enter your username">
@@ -106,12 +106,48 @@
               <label for="password">Password</label>
               <input type="password" class="form-control" id="password" placeholder="Enter your password">
             </div>
+            <input type="submit" class="btn btn-primary" onclick="login()" value="Войти"/>
           </form>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-primary" onclick="login()">Войти</button>
-          <button type="button" class="btn btn-secondary" onclick="register()">Регистрация</button>
+          <button type="button" class="btn btn-secondary" onclick="showSignupModal()">Регистрация</button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно для регистрации -->
+  <div id="signupModal" class="modal" tabindex="-1" role="dialog" style="display: none;">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Регистрация</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close" onclick="hideSignupModal()">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <form id="sign-up-form">
+            <div class="form-group">
+              <label for="regUsername">Ник</label>
+              <input name="regUsername" type="text" class="form-control" id="regUsername" placeholder="Enter your username">
+            </div>
+            <div class="form-group">
+              <label for="regPassword">Пароль</label>
+              <input name="regPassword" type="password" class="form-control" id="regPassword" placeholder="Enter your password">
+            </div>
+            <div class="form-group">
+              <label for="regPasswordRepeat">Повторите пароль</label>
+              <input name="regPasswordRepeat" type="password" class="form-control" id="regPasswordRepeat" placeholder="Repeat your password">
+            </div>
+            <input type="submit" class="btn btn-primary" value="Регистрация"/>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="fromSignupToSignIn()">Войти</button>
+
+        </div>
+
       </div>
     </div>
   </div>
@@ -201,20 +237,104 @@
       loginModal.style.display = "block";
     }
 
+    function showSignupModal() {
+      const signupModal = document.getElementById("signupModal");
+      signupModal.style.display = "block";
+    }
+
     function hideLoginModal() {
       const loginModal = document.getElementById("loginModal");
       loginModal.style.display = "none";
     }
 
+    function hideSignupModal() {
+      const signupModal = document.getElementById("signupModal");
+      signupModal.style.display = "none";
+    }
+
+    function fromSignupToSignIn() {
+      const signupModal = document.getElementById("signupModal");
+      signupModal.style.display = "none";
+      const loginModal = document.getElementById("loginModal");
+      loginModal.style.display = "block";
+    }
+
     function login() {
+      hideSignupModal()
       username = document.getElementById("username").value; // Store the username
       hideLoginModal();
     }
 
-    function register() {
-      hideLoginModal();
-    }
+    // function register() {
+    //   const XHR = new XMLHttpRequest();
+    //   let data = document.querySelector()
+    //   hideLoginModal();
+    // }
+    window.addEventListener("load", function() {
+      function sendData() {
+        const XHR = new XMLHttpRequest();
 
+        const FD = new FormData(form);
+        var object = {}
+
+        FD.forEach((value, key) => object[key] = value);
+        var json = JSON.stringify(object);
+
+        XHR.addEventListener("load", function(event) {
+          alert(event.target.responseText);
+        });
+
+        XHR.addEventListener("error", function(event) {
+          alert("Не удалось провести регистрацию!")
+        });
+
+        XHR.open("POST", "http://localhost:8080/signin");
+
+        XHR.send(json)
+      }
+
+      const form = document.getElementById("loginModalForm");
+
+      form.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        sendData();
+        console.log(form)
+      })
+    })
+
+    window.addEventListener("load", function() {
+      function sendData() {
+        const XHR = new XMLHttpRequest();
+
+        const FD = new FormData(form);
+        var object = {}
+
+        FD.forEach((value, key) => object[key] = value);
+        var json = JSON.stringify(object);
+
+        XHR.addEventListener("load", function(event) {
+          alert(event.target.responseText);
+        });
+
+        XHR.addEventListener("error", function(event) {
+          alert("Не удалось провести регистрацию!")
+        });
+
+        XHR.open("POST", "http://localhost:8080/signup");
+
+        XHR.send(json)
+      }
+
+      const form = document.getElementById("sign-up-form");
+
+      form.addEventListener("submit", function(event) {
+        event.preventDefault();
+
+        sendData();
+        console.log(form)
+      })
+    })
   </script>
 </body>
 </html>
